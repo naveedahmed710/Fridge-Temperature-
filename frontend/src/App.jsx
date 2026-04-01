@@ -50,7 +50,7 @@ export default function App() {
         {anyError && (
           <div className="bg-red-950/30 border border-red-800/50 rounded-xl px-5 py-4 text-red-300 text-sm">
             Could not reach the server: {anyError}. Make sure the backend is
-            running on port 3000.
+            running on port 4004.
           </div>
         )}
 

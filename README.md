@@ -51,7 +51,7 @@ npm install
 npm start
 ```
 
-The API runs on `http://localhost:3000`. Endpoints:
+The API runs on `http://localhost:4004`. Endpoints:
 
 | Method | Endpoint                | Description              |
 |--------|-------------------------|--------------------------|
@@ -80,7 +80,7 @@ cd frontend
 node node_modules/vite/bin/vite.js build
 ```
 
-This outputs to `backend/public/`. The Express server serves it automatically — just run the backend and open `http://localhost:3000`.
+This outputs to `backend/public/`. The Express server serves it automatically — just run the backend and open `http://localhost:4004`.
 
 ## Project Structure
 
@@ -130,6 +130,6 @@ The ESP32 sends this JSON to `POST /api/readings`:
 | WiFi Password  | `firmware/include/config.h` | `YOUR_WIFI_PASSWORD` |
 | Server URL     | `firmware/include/config.h` | `http://YOUR_SERVER_IP:3000/api/readings` |
 | Read interval  | `firmware/include/config.h` | 30 seconds      |
-| API port       | `backend/server.js` (env)  | 3000            |
+| API port       | `backend/server.js` (env)  | 4004            |
 | Data retention | `backend/server.js`        | 90 days         |
 | Alert threshold| `frontend/src/components/AlertBanner.jsx` | 8°C |

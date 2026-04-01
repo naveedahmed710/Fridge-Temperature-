@@ -5,7 +5,7 @@ const { initDb, purgeOldReadings } = require("./db");
 const readingsRouter = require("./routes/readings");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4004;
 
 app.use(cors());
 app.use(express.json());

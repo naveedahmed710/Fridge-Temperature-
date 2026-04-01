@@ -6,7 +6,7 @@
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 // ---- Server configuration ----
-#define SERVER_URL    "http://YOUR_SERVER_IP:3000/api/readings"
+#define SERVER_URL    "http://YOUR_SERVER_IP:4004/api/readings"
 #define DEVICE_ID     "fridge-01"
 
 // ---- Sensor configuration ----
