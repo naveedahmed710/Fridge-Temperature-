@@ -1,7 +1,6 @@
 const FRIDGE_THRESHOLD = 8;
-const FREEZER_THRESHOLD = -10;
 
-export default function AlertBanner({ readings }) {
+export default function AlertBanner({ readings, sensorNames = {} }) {
   if (!readings || readings.length === 0) return null;
 
   const alerts = [];
@@ -11,7 +10,7 @@ export default function AlertBanner({ readings }) {
       alerts.push({
         sensor: r.sensor_id,
         temp: r.temp_c,
-        message: `${r.sensor_id.replace("_", " ")} is at ${r.temp_c.toFixed(1)}°C — above ${FRIDGE_THRESHOLD}°C threshold`,
+        message: `${sensorNames[r.sensor_id] || r.sensor_id.replace("_", " ")} is at ${r.temp_c.toFixed(1)}°C - above ${FRIDGE_THRESHOLD}°C threshold`,
       });
     }
   }

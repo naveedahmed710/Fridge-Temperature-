@@ -28,7 +28,7 @@ async function start() {
   app.listen(PORT, () => {
     console.log(`Fridge Monitor API running on http://localhost:${PORT}`);
     console.log(
-      "Endpoints: POST/GET /api/readings | GET /api/readings/latest | GET /api/readings/stats"
+      "Endpoints: /api/readings, /api/readings/sensor-names, /api/readings/power, /api/readings/power/latest, /api/readings/power/stats"
     );
   });
 }

@@ -26,7 +26,12 @@ ChartJS.register(
   Filler
 );
 
-export default function TempChart({ readings, loading }) {
+export default function TempChart({
+  readings,
+  loading,
+  sensorNames = {},
+  isDark = true,
+}) {
   const chartData = useMemo(() => {
     if (!readings || readings.length === 0) return null;
 
@@ -41,7 +46,7 @@ export default function TempChart({ readings, loading }) {
     return {
       datasets: [
         {
-          label: "Sensor 1",
+          label: sensorNames.sensor_1 || "Sensor 1",
           data: sensor1,
           borderColor: "#10b981",
           backgroundColor: "rgba(16, 185, 129, 0.1)",
@@ -52,7 +57,7 @@ export default function TempChart({ readings, loading }) {
           fill: true,
         },
         {
-          label: "Sensor 2",
+          label: sensorNames.sensor_2 || "Sensor 2",
           data: sensor2,
           borderColor: "#3b82f6",
           backgroundColor: "rgba(59, 130, 246, 0.1)",
@@ -64,7 +69,7 @@ export default function TempChart({ readings, loading }) {
         },
       ],
     };
-  }, [readings]);
+  }, [readings, sensorNames.sensor_1, sensorNames.sensor_2]);
 
   const options = {
     responsive: true,
@@ -77,17 +82,17 @@ export default function TempChart({ readings, loading }) {
       legend: {
         position: "top",
         labels: {
-          color: "#9ca3af",
+          color: isDark ? "#9ca3af" : "#4b5563",
           usePointStyle: true,
           pointStyle: "circle",
           padding: 20,
         },
       },
       tooltip: {
-        backgroundColor: "#1f2937",
-        titleColor: "#f3f4f6",
-        bodyColor: "#d1d5db",
-        borderColor: "#374151",
+        backgroundColor: isDark ? "#1f2937" : "#ffffff",
+        titleColor: isDark ? "#f3f4f6" : "#111827",
+        bodyColor: isDark ? "#d1d5db" : "#374151",
+        borderColor: isDark ? "#374151" : "#d1d5db",
         borderWidth: 1,
         padding: 12,
         callbacks: {
@@ -105,18 +110,18 @@ export default function TempChart({ readings, loading }) {
             hour: "HH:mm",
           },
         },
-        grid: { color: "rgba(75, 85, 99, 0.3)" },
-        ticks: { color: "#9ca3af", maxTicksLimit: 12 },
+        grid: { color: isDark ? "rgba(75, 85, 99, 0.3)" : "rgba(209, 213, 219, 0.6)" },
+        ticks: { color: isDark ? "#9ca3af" : "#4b5563", maxTicksLimit: 12 },
       },
       y: {
         title: {
           display: true,
           text: "Temperature (°C)",
-          color: "#9ca3af",
+          color: isDark ? "#9ca3af" : "#4b5563",
         },
-        grid: { color: "rgba(75, 85, 99, 0.3)" },
+        grid: { color: isDark ? "rgba(75, 85, 99, 0.3)" : "rgba(209, 213, 219, 0.6)" },
         ticks: {
-          color: "#9ca3af",
+          color: isDark ? "#9ca3af" : "#4b5563",
           callback: (val) => `${val}°`,
         },
       },
@@ -125,16 +130,16 @@ export default function TempChart({ readings, loading }) {
 
   if (loading) {
     return (
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 h-96 flex items-center justify-center">
-        <div className="text-gray-500">Loading chart...</div>
+      <div className={`${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6 h-96 flex items-center justify-center`}>
+        <div className={`${isDark ? "text-gray-500" : "text-gray-600"}`}>Loading chart...</div>
       </div>
     );
   }
 
   if (!chartData) {
     return (
-      <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 h-96 flex items-center justify-center">
-        <div className="text-gray-500">
+      <div className={`${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6 h-96 flex items-center justify-center`}>
+        <div className={`${isDark ? "text-gray-500" : "text-gray-600"}`}>
           No readings yet. Data will appear once the ESP32 starts sending.
         </div>
       </div>
@@ -142,8 +147,8 @@ export default function TempChart({ readings, loading }) {
   }
 
   return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6">
-      <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider mb-4">
+    <div className={`${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6`}>
+      <h3 className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm font-medium uppercase tracking-wider mb-4`}>
         Temperature — Last 24 Hours
       </h3>
       <div className="h-80">

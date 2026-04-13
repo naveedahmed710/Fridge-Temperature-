@@ -1,14 +1,23 @@
-export default function StatsCard({ stats, loading }) {
+export default function StatsCard({
+  stats,
+  loading,
+  sensorNames = {},
+  hours = 24,
+  isDark = true,
+}) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[1, 2].map((i) => (
-          <div key={i} className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6 animate-pulse">
-            <div className="h-5 bg-gray-700 rounded w-24 mb-4" />
+          <div
+            key={i}
+            className={`${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6 animate-pulse`}
+          >
+            <div className={`h-5 ${isDark ? "bg-gray-700" : "bg-gray-200"} rounded w-24 mb-4`} />
             <div className="space-y-3">
-              <div className="h-4 bg-gray-700 rounded w-full" />
-              <div className="h-4 bg-gray-700 rounded w-full" />
-              <div className="h-4 bg-gray-700 rounded w-full" />
+              <div className={`h-4 ${isDark ? "bg-gray-700" : "bg-gray-200"} rounded w-full`} />
+              <div className={`h-4 ${isDark ? "bg-gray-700" : "bg-gray-200"} rounded w-full`} />
+              <div className={`h-4 ${isDark ? "bg-gray-700" : "bg-gray-200"} rounded w-full`} />
             </div>
           </div>
         ))}
@@ -17,8 +26,8 @@ export default function StatsCard({ stats, loading }) {
   }
 
   const sensors = [
-    { id: "sensor_1", label: "Sensor 1" },
-    { id: "sensor_2", label: "Sensor 2" },
+    { id: "sensor_1", label: sensorNames.sensor_1 || "Sensor 1" },
+    { id: "sensor_2", label: sensorNames.sensor_2 || "Sensor 2" },
   ];
 
   return (
@@ -29,10 +38,10 @@ export default function StatsCard({ stats, loading }) {
         return (
           <div
             key={sensor.id}
-            className="bg-gray-800/50 border border-gray-700 rounded-2xl p-6"
+            className={`${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-6`}
           >
-            <h3 className="text-gray-400 text-sm font-medium uppercase tracking-wider mb-4">
-              {sensor.label} — 24h Stats
+            <h3 className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm font-medium uppercase tracking-wider mb-4`}>
+              {sensor.label} — Last {hours}h
             </h3>
             {stat ? (
               <div className="grid grid-cols-3 gap-4">
@@ -40,26 +49,26 @@ export default function StatsCard({ stats, loading }) {
                   <div className="text-blue-400 text-2xl font-bold tabular-nums">
                     {stat.min_temp?.toFixed(1)}°
                   </div>
-                  <div className="text-gray-500 text-xs mt-1">Min</div>
+                  <div className={`${isDark ? "text-gray-500" : "text-gray-600"} text-xs mt-1`}>Min</div>
                 </div>
                 <div>
                   <div className="text-amber-400 text-2xl font-bold tabular-nums">
                     {stat.avg_temp?.toFixed(1)}°
                   </div>
-                  <div className="text-gray-500 text-xs mt-1">Avg</div>
+                  <div className={`${isDark ? "text-gray-500" : "text-gray-600"} text-xs mt-1`}>Avg</div>
                 </div>
                 <div>
                   <div className="text-red-400 text-2xl font-bold tabular-nums">
                     {stat.max_temp?.toFixed(1)}°
                   </div>
-                  <div className="text-gray-500 text-xs mt-1">Max</div>
+                  <div className={`${isDark ? "text-gray-500" : "text-gray-600"} text-xs mt-1`}>Max</div>
                 </div>
-                <div className="col-span-3 mt-2 text-gray-500 text-xs">
-                  {stat.reading_count} readings in the last 24 hours
+                <div className={`col-span-3 mt-2 ${isDark ? "text-gray-500" : "text-gray-600"} text-xs`}>
+                  {stat.reading_count} readings in the selected period
                 </div>
               </div>
             ) : (
-              <div className="text-gray-500 text-sm">No data available</div>
+              <div className={`${isDark ? "text-gray-500" : "text-gray-600"} text-sm`}>No data available</div>
             )}
           </div>
         );
