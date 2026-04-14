@@ -26,16 +26,39 @@ void connectWiFi() {
   }
 }
 
+/*
+ * Sample a pin over multiple full AC cycles and compute true RMS.
+ * At 50Hz one cycle is 20ms; we sample for SAMPLE_DURATION_MS (default 40ms = 2 cycles)
+ * at maximum speed to capture the waveform shape.
+ */
+#ifndef SAMPLE_DURATION_MS
+#define SAMPLE_DURATION_MS 40
+#endif
+
+float readRms(int pin) {
+  unsigned long start = micros();
+  unsigned long durationUs = (unsigned long)SAMPLE_DURATION_MS * 1000UL;
+  double sumSq = 0.0;
+  uint32_t count = 0;
+
+  while ((micros() - start) < durationUs) {
+    int raw = analogRead(pin);
+    float v = (raw / ADC_MAX) * ADC_VREF;
+    float centered = v - (ADC_VREF / 2.0f);
+    sumSq += (double)centered * (double)centered;
+    count++;
+  }
+
+  if (count == 0) return 0.0f;
+  return (float)sqrt(sumSq / (double)count);
+}
+
 float readVoltageRms(int pin) {
-  int raw = analogRead(pin);
-  float volts = (raw / ADC_MAX) * ADC_VREF;
-  return volts * VOLTAGE_SCALE;
+  return readRms(pin) * VOLTAGE_SCALE;
 }
 
 float readCurrentRms(int pin) {
-  int raw = analogRead(pin);
-  float volts = (raw / ADC_MAX) * ADC_VREF;
-  return volts * CURRENT_SCALE;
+  return readRms(pin) * CURRENT_SCALE;
 }
 
 String buildPowerPayload() {

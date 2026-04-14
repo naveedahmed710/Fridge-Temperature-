@@ -2,12 +2,26 @@
 
 Real-time temperature and 3-phase electrical monitoring using two ESP32-S3 devices, a Node.js REST API backend, and a React dashboard.
 
+## Features
+
+- Live temperature monitoring with two DS18B20 sensors (Room + Refrigerator)
+- 3-phase voltage and current monitoring (ZMPT101B + ACS712 per phase)
+- Editable sensor names (inline edit on each sensor card, persisted to DB)
+- Statistics with time-range filter (1h, 6h, 24h, 3d, 7d)
+- Dark / Light mode toggle (saved in browser)
+- Temperature threshold alerts
+- Both ESP32 devices feed the same dashboard
+- API key authentication (optional, via environment variable)
+- Rate limiting and input validation
+
 ## Architecture
 
 ```
-[DS18B20 x2] -> [ESP32-S3 #1] -> POST /api/readings
-[ZMPT101B x3 + ACS712 x3] -> [ESP32-S3 #2] -> POST /api/readings/power
-                                           -> [Node.js API + SQLite] <- [React Dashboard]
+[DS18B20 x2] --> [ESP32-S3 #1] --> POST /api/readings
+                                                          \
+                                                           --> [Node.js API + SQLite] <-- [React Dashboard]
+                                                          /
+[ZMPT101B x3 + ACS712 x3] --> [ESP32-S3 #2] --> POST /api/readings/power
 ```
 
 ## Tech Stack
@@ -16,10 +30,12 @@ Real-time temperature and 3-phase electrical monitoring using two ESP32-S3 devic
 |---|---|
 | Firmware (Temp) | PlatformIO, Arduino, OneWire, DallasTemperature |
 | Firmware (Power) | PlatformIO, Arduino, ZMPT101B, ACS712 |
-| Backend | Node.js, Express 5, sql.js (SQLite) |
+| Backend | Node.js, Express 5, sql.js (SQLite), express-rate-limit |
 | Frontend | React 19, Vite 8, Tailwind CSS 4, Chart.js |
 
 ## Wiring
+
+### Temperature ESP32-S3
 
 Both DS18B20 sensors share a single data pin using the OneWire protocol.
 
@@ -32,9 +48,26 @@ ESP32 GPIO4 ──┬── DS18B20 #1 (DATA)
 GND  ── GND (both sensors)
 ```
 
+### Power ESP32-S3
+
+Three ZMPT101B voltage modules and three ACS712 20A current modules, one per phase.
+
+```
+ESP32 GPIO1  ── ZMPT101B Phase A (signal)
+ESP32 GPIO2  ── ZMPT101B Phase B (signal)
+ESP32 GPIO3  ── ZMPT101B Phase C (signal)
+
+ESP32 GPIO4  ── ACS712 Phase A (signal)
+ESP32 GPIO5  ── ACS712 Phase B (signal)
+ESP32 GPIO6  ── ACS712 Phase C (signal)
+
+3.3V ── VCC (all modules)
+GND  ── GND (all modules)
+```
+
 ## Setup
 
-### 1. Firmware
+### 1. Firmware (Temperature ESP32-S3)
 
 1. Install [PlatformIO CLI](https://platformio.org/install/cli) or the VS Code extension
 2. Edit `firmware/include/config.h` — set your WiFi SSID, password, and server IP
@@ -46,7 +79,20 @@ pio run --target upload
 pio device monitor
 ```
 
-### 2. Backend
+### 2. Firmware (Power ESP32-S3)
+
+1. Edit `firmware-power/include/config.h` — set WiFi, backend URL, and calibrated scale factors
+2. Flash:
+
+```bash
+cd firmware-power
+pio run --target upload
+pio device monitor
+```
+
+The power firmware samples each ADC pin over 2 full AC cycles (40ms at 50Hz) and computes true RMS values. Tune `VOLTAGE_SCALE` and `CURRENT_SCALE` in the config with a known reference meter.
+
+### 3. Backend
 
 ```bash
 cd backend
@@ -54,7 +100,17 @@ npm install
 npm start
 ```
 
-The API runs on `http://localhost:4004`. Endpoints:
+The API runs on `http://localhost:4004`.
+
+**Optional environment variables:**
+
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | Server port | `4004` |
+| `API_KEY` | If set, all API routes require `X-API-Key` header or `?api_key=` query param | empty (auth disabled) |
+| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173,http://localhost:4004` |
+
+**Endpoints:**
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -70,24 +126,14 @@ The API runs on `http://localhost:4004`. Endpoints:
 | GET | `/api/readings/power/stats` | 3-phase power min/max/avg |
 | GET | `/api/health` | Server health check |
 
-### 2b. Firmware (Power ESP32-S3)
-
-```bash
-cd firmware-power
-pio run --target upload
-pio device monitor
-```
-
-Edit `firmware-power/include/config.h` with WiFi, backend URL, and calibrated scale factors.
-
-### 3. Frontend
+### 4. Frontend
 
 **Development:**
 
 ```bash
 cd frontend
 npm install
-node node_modules/vite/bin/vite.js
+npm run dev
 ```
 
 The dev server runs on `http://localhost:5173` and proxies API requests to the backend.
@@ -96,38 +142,41 @@ The dev server runs on `http://localhost:5173` and proxies API requests to the b
 
 ```bash
 cd frontend
-node node_modules/vite/bin/vite.js build
+npm run build
 ```
 
-This outputs to `backend/public/`. The Express server serves it automatically - run the backend and open `http://localhost:4004`.
+This outputs to `backend/public/`. The Express server serves it automatically — run the backend and open `http://localhost:4004`.
 
 ## Project Structure
 
 ```
-├── firmware/
+├── firmware/                        # Temperature ESP32-S3
 │   ├── platformio.ini
-│   ├── include/config.h        # WiFi & server config
-│   └── src/main.cpp            # Sensor reading & HTTP POST
-├── firmware-power/
+│   ├── include/config.h             # WiFi & server config
+│   └── src/main.cpp                 # DS18B20 reading & HTTP POST
+├── firmware-power/                  # Power ESP32-S3
 │   ├── platformio.ini
-│   ├── include/config.h        # WiFi, API endpoint, calibration
-│   └── src/main.cpp            # 3-phase voltage/current POST
+│   ├── include/config.h             # WiFi, API endpoint, calibration
+│   └── src/main.cpp                 # 3-phase true-RMS sampling & POST
 ├── backend/
-│   ├── server.js               # Express app entry
-│   ├── db.js                   # SQLite setup & queries
-│   └── routes/readings.js      # API route handlers
+│   ├── server.js                    # Express app entry (CORS, auth, rate-limit)
+│   ├── db.js                        # SQLite setup & queries
+│   ├── routes/readings.js           # All API route handlers
+│   └── package.json
 ├── frontend/
 │   ├── vite.config.js
 │   ├── index.html
 │   └── src/
-│       ├── App.jsx             # Main dashboard layout
+│       ├── App.jsx                  # Main dashboard layout + theme toggle
 │       ├── components/
-│       │   ├── CurrentTemp.jsx # Live temperature display
-│       │   ├── TempChart.jsx   # 24h line chart
-│       │   ├── StatsCard.jsx   # Min/Max/Avg cards
-│       │   └── AlertBanner.jsx # Threshold warnings
+│       │   ├── CurrentTemp.jsx      # Live temp display + inline name edit
+│       │   ├── TempChart.jsx        # 24h temperature line chart
+│       │   ├── StatsCard.jsx        # Min/Max/Avg with time filter
+│       │   ├── AlertBanner.jsx      # Threshold warnings (dark/light)
+│       │   └── PowerMonitor.jsx     # 3-phase live readings + stats
 │       └── hooks/
-│           └── useReadings.js  # Data fetching & polling
+│           └── useReadings.js       # Data fetching, polling & sensor names
+├── .gitignore
 └── README.md
 ```
 
@@ -164,8 +213,20 @@ Power ESP32 sends this JSON to `POST /api/readings/power`:
 |---|---|---|
 | Temp ESP WiFi | `firmware/include/config.h` | `YOUR_WIFI_SSID` / `YOUR_WIFI_PASSWORD` |
 | Temp ESP server URL | `firmware/include/config.h` | `http://YOUR_SERVER_IP:4004/api/readings` |
+| Power ESP WiFi | `firmware-power/include/config.h` | `YOUR_WIFI_SSID` / `YOUR_WIFI_PASSWORD` |
 | Power ESP server URL | `firmware-power/include/config.h` | `http://YOUR_SERVER_IP:4004/api/readings/power` |
 | Power ESP scales | `firmware-power/include/config.h` | `VOLTAGE_SCALE=100`, `CURRENT_SCALE=20` |
-| API port | `backend/server.js` (env) | 4004 |
+| API port | `backend/server.js` (env `PORT`) | 4004 |
+| API key | env `API_KEY` | empty (disabled) |
+| CORS origins | env `CORS_ORIGINS` | `http://localhost:5173,http://localhost:4004` |
+| Rate limit | `backend/server.js` | 120 requests/min |
 | Data retention | `backend/server.js` | 90 days |
 | Alert threshold | `frontend/src/components/AlertBanner.jsx` | 8 C |
+
+## Security
+
+- **API key auth** — set `API_KEY` env var to require `X-API-Key` header on all requests
+- **CORS** — restricted to configured origins (not wildcard)
+- **Rate limiting** — 120 requests per minute per IP
+- **Body size** — JSON payloads capped at 1 MB
+- **Input validation** — device/sensor IDs validated against `[a-zA-Z0-9_-]`, display names capped at 100 chars, `hours` parameter clamped to 1–720

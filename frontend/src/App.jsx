@@ -13,14 +13,15 @@ import {
   usePowerStats,
 } from "./hooks/useReadings";
 
+const STATS_FILTERS = [
+  { value: 1, label: "1h" },
+  { value: 6, label: "6h" },
+  { value: 24, label: "24h" },
+  { value: 72, label: "3d" },
+  { value: 168, label: "7d" },
+];
+
 export default function App() {
-  const STATS_FILTERS = [
-    { value: 1, label: "1h" },
-    { value: 6, label: "6h" },
-    { value: 24, label: "24h" },
-    { value: 72, label: "3d" },
-    { value: 168, label: "7d" },
-  ];
   const [tempDeviceId] = useState("fridge-01");
   const [powerDeviceId] = useState("power-01");
   const [statsHours, setStatsHours] = useState(24);
@@ -107,7 +108,7 @@ export default function App() {
           </div>
         )}
 
-        <AlertBanner readings={latest.data} sensorNames={sensorNames.data} />
+        <AlertBanner readings={latest.data} sensorNames={sensorNames.data} isDark={isDark} />
 
         <section>
           <h2 className={`${subtleHeadingClass} text-xs font-semibold uppercase tracking-widest mb-4`}>

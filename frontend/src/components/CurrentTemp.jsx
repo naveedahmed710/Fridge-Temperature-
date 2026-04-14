@@ -31,6 +31,7 @@ export default function CurrentTemp({
   isDark = true,
 }) {
   const [editing, setEditing] = useState({});
+  const [saveError, setSaveError] = useState(null);
   const [draftNames, setDraftNames] = useState({
     sensor_1: sensorNames.sensor_1 || "Room",
     sensor_2: sensorNames.sensor_2 || "Refrigerator",
@@ -45,8 +46,13 @@ export default function CurrentTemp({
 
   async function handleSave(sensorId) {
     if (!onSaveName) return;
-    await onSaveName(sensorId, draftNames[sensorId] || "");
-    setEditing((prev) => ({ ...prev, [sensorId]: false }));
+    setSaveError(null);
+    try {
+      await onSaveName(sensorId, draftNames[sensorId] || "");
+      setEditing((prev) => ({ ...prev, [sensorId]: false }));
+    } catch (err) {
+      setSaveError(`Failed to save ${sensorId}: ${err.message}`);
+    }
   }
 
   if (loading) {
@@ -71,7 +77,13 @@ export default function CurrentTemp({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-3">
+      {saveError && (
+        <div className={`${isDark ? "bg-red-950/30 border-red-800/50 text-red-300" : "bg-red-50 border-red-300 text-red-700"} border rounded-lg px-4 py-2 text-sm`}>
+          {saveError}
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {sensors.map((sensor) => {
         const reading = readings?.find((r) => r.sensor_id === sensor.id);
         const temp = reading?.temp_c ?? null;
@@ -148,6 +160,7 @@ export default function CurrentTemp({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

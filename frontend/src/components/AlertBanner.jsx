@@ -1,6 +1,6 @@
 const FRIDGE_THRESHOLD = 8;
 
-export default function AlertBanner({ readings, sensorNames = {} }) {
+export default function AlertBanner({ readings, sensorNames = {}, isDark = true }) {
   if (!readings || readings.length === 0) return null;
 
   const alerts = [];
@@ -22,10 +22,10 @@ export default function AlertBanner({ readings, sensorNames = {} }) {
       {alerts.map((alert, i) => (
         <div
           key={i}
-          className="bg-red-950/40 border border-red-800/50 rounded-xl px-5 py-4 flex items-center gap-3"
+          className={`${isDark ? "bg-red-950/40 border-red-800/50" : "bg-red-50 border-red-300"} border rounded-xl px-5 py-4 flex items-center gap-3`}
         >
-          <span className="text-red-400 text-xl flex-shrink-0">!!</span>
-          <span className="text-red-300 text-sm font-medium">
+          <span className={`${isDark ? "text-red-400" : "text-red-600"} text-xl flex-shrink-0`}>!!</span>
+          <span className={`${isDark ? "text-red-300" : "text-red-700"} text-sm font-medium`}>
             {alert.message}
           </span>
         </div>

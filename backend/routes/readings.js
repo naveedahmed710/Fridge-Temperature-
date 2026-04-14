@@ -3,15 +3,29 @@ const db = require("../db");
 
 const router = Router();
 
+const MAX_HOURS = 720;
+const MAX_NAME_LENGTH = 100;
+const DEVICE_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+const SENSOR_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
+
+function clampHours(raw) {
+  const h = parseInt(raw, 10) || 24;
+  return Math.max(1, Math.min(h, MAX_HOURS));
+}
+
+function isValidId(id, pattern) {
+  return typeof id === "string" && pattern.test(id);
+}
+
 router.post("/", (req, res) => {
   const { device_id, sensors } = req.body;
 
-  if (!device_id || !Array.isArray(sensors) || sensors.length === 0) {
-    return res.status(400).json({ error: "Invalid payload. Requires device_id and sensors array." });
+  if (!isValidId(device_id, DEVICE_ID_PATTERN) || !Array.isArray(sensors) || sensors.length === 0) {
+    return res.status(400).json({ error: "Invalid payload. Requires valid device_id and sensors array." });
   }
 
   for (const s of sensors) {
-    if (!s.id || typeof s.temp_c !== "number") {
+    if (!isValidId(s.id, SENSOR_ID_PATTERN) || typeof s.temp_c !== "number") {
       return res.status(400).json({ error: `Invalid sensor entry: ${JSON.stringify(s)}` });
     }
   }
@@ -46,7 +60,11 @@ router.put("/sensor-names", (req, res) => {
     });
   }
 
-  const cleanName = display_name.trim();
+  if (!isValidId(device_id, DEVICE_ID_PATTERN) || !isValidId(sensor_id, SENSOR_ID_PATTERN)) {
+    return res.status(400).json({ error: "Invalid device_id or sensor_id format." });
+  }
+
+  const cleanName = display_name.trim().slice(0, MAX_NAME_LENGTH);
   if (!cleanName) {
     return res.status(400).json({ error: "display_name cannot be empty." });
   }
@@ -66,15 +84,15 @@ router.put("/sensor-names", (req, res) => {
 router.post("/power", (req, res) => {
   const { device_id, phases } = req.body;
 
-  if (!device_id || !Array.isArray(phases) || phases.length === 0) {
+  if (!isValidId(device_id, DEVICE_ID_PATTERN) || !Array.isArray(phases) || phases.length === 0) {
     return res
       .status(400)
-      .json({ error: "Invalid payload. Requires device_id and phases array." });
+      .json({ error: "Invalid payload. Requires valid device_id and phases array." });
   }
 
   for (const phase of phases) {
     if (
-      !phase.id ||
+      !isValidId(phase.id, SENSOR_ID_PATTERN) ||
       typeof phase.voltage_v !== "number" ||
       typeof phase.current_a !== "number"
     ) {
@@ -107,7 +125,7 @@ router.get("/power/latest", (req, res) => {
 
 router.get("/power", (req, res) => {
   const deviceId = req.query.device_id || "power-01";
-  const hours = parseInt(req.query.hours, 10) || 24;
+  const hours = clampHours(req.query.hours);
 
   try {
     const data = db.getPowerReadings(deviceId, hours);
@@ -120,7 +138,7 @@ router.get("/power", (req, res) => {
 
 router.get("/power/stats", (req, res) => {
   const deviceId = req.query.device_id || "power-01";
-  const hours = parseInt(req.query.hours, 10) || 24;
+  const hours = clampHours(req.query.hours);
 
   try {
     const data = db.getPowerStats(deviceId, hours);
@@ -145,7 +163,7 @@ router.get("/latest", (req, res) => {
 
 router.get("/", (req, res) => {
   const deviceId = req.query.device_id || "fridge-01";
-  const hours = parseInt(req.query.hours, 10) || 24;
+  const hours = clampHours(req.query.hours);
 
   try {
     const data = db.getReadings(deviceId, hours);
@@ -158,7 +176,7 @@ router.get("/", (req, res) => {
 
 router.get("/stats", (req, res) => {
   const deviceId = req.query.device_id || "fridge-01";
-  const hours = parseInt(req.query.hours, 10) || 24;
+  const hours = clampHours(req.query.hours);
 
   try {
     const data = db.getStats(deviceId, hours);

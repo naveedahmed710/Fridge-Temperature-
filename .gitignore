@@ -10,6 +10,13 @@ backend/public/
 # PlatformIO
 firmware/.pio/
 firmware/.vscode/
+firmware-power/.pio/
+firmware-power/.vscode/
+
+# Firmware config with real credentials — keep templates only
+# Uncomment the lines below once you set real WiFi/server values:
+# firmware/include/config.h
+# firmware-power/include/config.h
 
 # Environment
 .env
