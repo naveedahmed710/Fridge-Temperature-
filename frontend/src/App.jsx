@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import CurrentTemp from "./components/CurrentTemp";
 import TempChart from "./components/TempChart";
 import StatsCard from "./components/StatsCard";
 import PowerMonitor from "./components/PowerMonitor";
+import DeviceStatusFooter from "./components/DeviceStatusFooter";
 import {
   useLatest,
   useReadings,
@@ -10,6 +11,8 @@ import {
   useSensorNames,
   usePowerLatest,
   usePowerStats,
+  useDeviceNames,
+  useDeviceStatus,
 } from "./hooks/useReadings";
 
 const STATS_FILTERS = [
@@ -39,6 +42,10 @@ export default function App() {
   const sensorNames = useSensorNames(tempDeviceId);
   const powerLatest = usePowerLatest(powerDeviceId);
   const powerStats = usePowerStats(powerDeviceId, statsHours);
+  const deviceNames = useDeviceNames();
+
+  const deviceIdsList = useMemo(() => [tempDeviceId, powerDeviceId], [tempDeviceId, powerDeviceId]);
+  const deviceStatus = useDeviceStatus(deviceIdsList);
 
   const anyError =
     latest.error ||
@@ -84,6 +91,8 @@ export default function App() {
                 sensorNames.refetch();
                 powerLatest.refetch();
                 powerStats.refetch();
+                deviceNames.refetch();
+                deviceStatus.refetch();
               }}
               className={`${glass} ${cardHover} text-sm px-4 py-2 rounded-xl cursor-pointer ${isDark ? "text-gray-300" : "text-gray-700"}`}
             >
@@ -180,11 +189,12 @@ export default function App() {
         </section>
       </main>
 
-      <footer className={`${glass} mt-16`}>
-        <div className={`max-w-7xl mx-auto px-6 py-5 text-center ${muted} text-xs`}>
-          Sweet Home Automation — Dual ESP32-S3 Temperature + 3-Phase Electrical Monitoring
-        </div>
-      </footer>
+      <DeviceStatusFooter
+        statuses={deviceStatus.data}
+        deviceNames={deviceNames.data}
+        onSaveDeviceName={deviceNames.saveName}
+        isDark={isDark}
+      />
     </div>
   );
 }

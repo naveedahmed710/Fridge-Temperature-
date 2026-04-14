@@ -142,6 +142,76 @@ export function useSensorNames(deviceId = "fridge-01") {
   return { data, error, loading, refetch: fetchNames, saveName };
 }
 
+export function useDeviceNames() {
+  const [data, setData] = useState({});
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNames = useCallback(async () => {
+    try {
+      const json = await fetchJson(`${API_BASE}/device-names`);
+      const map = {};
+      for (const row of json.names || []) {
+        map[row.device_id] = row.display_name;
+      }
+      setData(map);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const saveName = useCallback(async (deviceId, displayName) => {
+    const cleanName = displayName.trim();
+    if (!cleanName) throw new Error("Name cannot be empty");
+
+    await fetchJson(`${API_BASE}/device-names`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ device_id: deviceId, display_name: cleanName }),
+    });
+
+    setData((prev) => ({ ...prev, [deviceId]: cleanName }));
+  }, []);
+
+  useEffect(() => {
+    fetchNames();
+  }, [fetchNames]);
+
+  return { data, error, loading, refetch: fetchNames, saveName };
+}
+
+export function useDeviceStatus(deviceIds = []) {
+  const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const ids = deviceIds.join(",");
+
+  const fetchStatus = useCallback(async () => {
+    if (!ids) return;
+    try {
+      const json = await fetchJson(`${API_BASE}/device-status?device_ids=${ids}`);
+      setData(json.statuses || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [ids]);
+
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchStatus]);
+
+  return { data, error, loading, refetch: fetchStatus };
+}
+
 export function usePowerLatest(deviceId = "power-01") {
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);

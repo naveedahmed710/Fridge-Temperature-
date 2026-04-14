@@ -7,9 +7,10 @@ Real-time temperature and 3-phase electrical monitoring using two ESP32-S3 devic
 - Live temperature monitoring with two DS18B20 sensors (Room + Refrigerator)
 - 3-phase voltage and current monitoring (ZMPT101B + ACS712 per phase)
 - Editable sensor names (inline edit on each sensor card, persisted to DB)
+- Editable ESP32 device names with live connection status in the footer
 - Statistics with time-range filter (1h, 6h, 24h, 3d, 7d)
 - Dark / Light mode toggle (saved in browser)
-- Temperature threshold alerts
+- Glassmorphism UI with smooth animations
 - Both ESP32 devices feed the same dashboard
 - API key authentication (optional, via environment variable)
 - Rate limiting and input validation
@@ -120,6 +121,9 @@ The API runs on `http://localhost:4004`.
 | GET | `/api/readings/stats` | Temperature min/max/avg |
 | GET | `/api/readings/sensor-names` | Get editable sensor display names |
 | PUT | `/api/readings/sensor-names` | Update a sensor display name |
+| GET | `/api/readings/device-names` | Get editable ESP32 device display names |
+| PUT | `/api/readings/device-names` | Update an ESP32 device display name |
+| GET | `/api/readings/device-status` | Connection status for devices (`device_ids`) |
 | POST | `/api/readings/power` | Power ESP32 sends 3-phase voltage/current |
 | GET | `/api/readings/power/latest` | Latest power values per phase |
 | GET | `/api/readings/power` | Power history (`device_id`, `hours`) |
@@ -172,10 +176,10 @@ This outputs to `backend/public/`. The Express server serves it automatically �
 │       │   ├── CurrentTemp.jsx      # Live temp display + inline name edit
 │       │   ├── TempChart.jsx        # 24h temperature line chart
 │       │   ├── StatsCard.jsx        # Min/Max/Avg with time filter
-│       │   ├── AlertBanner.jsx      # Threshold warnings (dark/light)
-│       │   └── PowerMonitor.jsx     # 3-phase live readings + stats
+│       │   ├── PowerMonitor.jsx     # 3-phase live readings + stats
+│       │   └── DeviceStatusFooter.jsx # ESP32 connection status + device name editing
 │       └── hooks/
-│           └── useReadings.js       # Data fetching, polling & sensor names
+│           └── useReadings.js       # Data fetching, polling, sensor/device names & status
 ├── .gitignore
 └── README.md
 ```
@@ -221,7 +225,6 @@ Power ESP32 sends this JSON to `POST /api/readings/power`:
 | CORS origins | env `CORS_ORIGINS` | `http://localhost:5173,http://localhost:4004` |
 | Rate limit | `backend/server.js` | 120 requests/min |
 | Data retention | `backend/server.js` | 90 days |
-| Alert threshold | `frontend/src/components/AlertBanner.jsx` | 8 C |
 
 ## Security
 

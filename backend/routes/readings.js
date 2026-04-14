@@ -81,6 +81,57 @@ router.put("/sensor-names", (req, res) => {
   }
 });
 
+router.get("/device-names", (_req, res) => {
+  try {
+    const names = db.getDeviceNames();
+    res.json({ names });
+  } catch (err) {
+    console.error("DB query error:", err.message);
+    res.status(500).json({ error: "Failed to fetch device names" });
+  }
+});
+
+router.put("/device-names", (req, res) => {
+  const { device_id, display_name } = req.body;
+
+  if (!isValidId(device_id, DEVICE_ID_PATTERN) || typeof display_name !== "string") {
+    return res.status(400).json({ error: "Invalid payload. Requires valid device_id and display_name." });
+  }
+
+  const cleanName = display_name.trim().slice(0, MAX_NAME_LENGTH);
+  if (!cleanName) {
+    return res.status(400).json({ error: "display_name cannot be empty." });
+  }
+
+  try {
+    db.upsertDeviceName(device_id, cleanName);
+    res.json({ message: "Device name updated", device: { device_id, display_name: cleanName } });
+  } catch (err) {
+    console.error("DB upsert error:", err.message);
+    res.status(500).json({ error: "Failed to update device name" });
+  }
+});
+
+router.get("/device-status", (req, res) => {
+  const ids = req.query.device_ids;
+  if (!ids) {
+    return res.status(400).json({ error: "Requires device_ids query param (comma-separated)." });
+  }
+
+  const deviceIds = ids.split(",").map((s) => s.trim()).filter(Boolean);
+  if (deviceIds.length === 0 || deviceIds.some((id) => !isValidId(id, DEVICE_ID_PATTERN))) {
+    return res.status(400).json({ error: "Invalid device_ids." });
+  }
+
+  try {
+    const statuses = db.getDeviceStatus(deviceIds);
+    res.json({ statuses });
+  } catch (err) {
+    console.error("DB query error:", err.message);
+    res.status(500).json({ error: "Failed to fetch device status" });
+  }
+});
+
 router.post("/power", (req, res) => {
   const { device_id, phases } = req.body;
 

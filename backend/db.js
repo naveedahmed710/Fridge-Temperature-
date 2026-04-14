@@ -47,6 +47,15 @@ async function initDb() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS device_names (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      device_id TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      updated_at DATETIME DEFAULT (datetime('now'))
+    )
+  `);
+
   db.run(`CREATE INDEX IF NOT EXISTS idx_readings_time ON readings(created_at)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_readings_device ON readings(device_id, sensor_id)`);
   db.run(
@@ -214,6 +223,42 @@ function upsertSensorName(deviceId, sensorId, displayName, persist = true) {
   if (persist) save();
 }
 
+function getDeviceNames() {
+  return queryAll(`SELECT device_id, display_name, updated_at FROM device_names ORDER BY device_id ASC`);
+}
+
+function upsertDeviceName(deviceId, displayName) {
+  db.run(
+    `INSERT INTO device_names (device_id, display_name, updated_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT(device_id)
+     DO UPDATE SET
+       display_name = excluded.display_name,
+       updated_at = datetime('now')`,
+    [deviceId, displayName]
+  );
+  save();
+}
+
+function getDeviceStatus(deviceIds) {
+  const results = [];
+  for (const deviceId of deviceIds) {
+    const tempRows = queryAll(
+      `SELECT created_at FROM readings WHERE device_id = ? ORDER BY id DESC LIMIT 1`,
+      [deviceId]
+    );
+    const powerRows = queryAll(
+      `SELECT created_at FROM power_readings WHERE device_id = ? ORDER BY id DESC LIMIT 1`,
+      [deviceId]
+    );
+    const lastTemp = tempRows.length > 0 ? tempRows[0].created_at : null;
+    const lastPower = powerRows.length > 0 ? powerRows[0].created_at : null;
+    const lastSeen = lastTemp || lastPower || null;
+    results.push({ device_id: deviceId, last_seen: lastSeen });
+  }
+  return results;
+}
+
 function purgeOldReadings(days = 90) {
   db.run("DELETE FROM readings WHERE created_at < datetime('now', ?)", [
     `-${days} days`,
@@ -237,5 +282,8 @@ module.exports = {
   getPowerStats,
   getSensorNames,
   upsertSensorName,
+  getDeviceNames,
+  upsertDeviceName,
+  getDeviceStatus,
   purgeOldReadings,
 };
