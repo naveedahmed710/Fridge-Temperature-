@@ -1,26 +1,23 @@
 import { useEffect, useState } from "react";
 
-function getTempColor(temp) {
-  if (temp === null || temp === undefined) return "text-gray-400";
-  if (temp <= 5) return "text-emerald-500";
-  if (temp <= 8) return "text-amber-500";
-  return "text-red-500";
-}
-
-function getTempBg(temp, isDark) {
-  if (temp === null || temp === undefined) {
-    return isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200";
-  }
-  if (temp <= 5) return "bg-emerald-950/30 border-emerald-800/50";
-  if (temp <= 8) return "bg-amber-950/30 border-amber-800/50";
-  return "bg-red-950/30 border-red-800/50";
+function getTempGradient(temp) {
+  if (temp === null || temp === undefined) return "gradient-text-blue";
+  if (temp <= 5) return "gradient-text-emerald";
+  if (temp <= 8) return "gradient-text-amber";
+  return "gradient-text-red";
 }
 
 function getStatusLabel(temp) {
-  if (temp === null || temp === undefined) return "No Data";
-  if (temp <= 5) return "Normal";
-  if (temp <= 8) return "Warning";
-  return "Critical";
+  if (temp === null || temp === undefined) return { text: "No Data", cls: "bg-gray-500/20 text-gray-400" };
+  if (temp <= 5) return { text: "Normal", cls: "bg-emerald-500/20 text-emerald-400" };
+  if (temp <= 8) return { text: "Warning", cls: "bg-amber-500/20 text-amber-400" };
+  return { text: "Critical", cls: "bg-red-500/20 text-red-400" };
+}
+
+function getGlowClass(temp) {
+  if (temp === null || temp === undefined) return "";
+  if (temp <= 5) return "animate-pulse-glow";
+  return "";
 }
 
 export default function CurrentTemp({
@@ -55,16 +52,19 @@ export default function CurrentTemp({
     }
   }
 
+  const glass = isDark ? "glass-dark" : "glass-light";
+  const cardHover = `card-hover ${isDark ? "card-hover-dark" : "card-hover-light"}`;
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {[1, 2].map((i) => (
           <div
             key={i}
-            className={`${isDark ? "bg-gray-800/50 border-gray-700" : "bg-white border-gray-200"} border rounded-2xl p-8 animate-pulse`}
+            className={`${glass} rounded-2xl p-8 shimmer-bg`}
           >
-            <div className={`${isDark ? "bg-gray-700" : "bg-gray-200"} h-6 rounded w-24 mb-4`} />
-            <div className={`${isDark ? "bg-gray-700" : "bg-gray-200"} h-16 rounded w-32`} />
+            <div className={`${isDark ? "bg-gray-700/50" : "bg-gray-200/50"} h-6 rounded-lg w-28 mb-6`} />
+            <div className={`${isDark ? "bg-gray-700/50" : "bg-gray-200/50"} h-16 rounded-lg w-36`} />
           </div>
         ))}
       </div>
@@ -77,89 +77,83 @@ export default function CurrentTemp({
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {saveError && (
-        <div className={`${isDark ? "bg-red-950/30 border-red-800/50 text-red-300" : "bg-red-50 border-red-300 text-red-700"} border rounded-lg px-4 py-2 text-sm`}>
+        <div className={`${glass} rounded-xl px-4 py-3 text-red-400 text-sm animate-fade-in border border-red-500/20`}>
           {saveError}
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {sensors.map((sensor) => {
-        const reading = readings?.find((r) => r.sensor_id === sensor.id);
-        const temp = reading?.temp_c ?? null;
-        const time = reading?.created_at;
+        {sensors.map((sensor, idx) => {
+          const reading = readings?.find((r) => r.sensor_id === sensor.id);
+          const temp = reading?.temp_c ?? null;
+          const time = reading?.created_at;
+          const status = getStatusLabel(temp);
 
-        return (
-          <div
-            key={sensor.id}
-            className={`rounded-2xl p-8 border transition-colors ${getTempBg(temp, isDark)}`}
-          >
-            <div className="flex items-start justify-between mb-2 gap-3">
-              {editing[sensor.id] ? (
-                <div className="flex-1 flex items-center gap-2">
-                  <input
-                    value={draftNames[sensor.id] || ""}
-                    onChange={(e) =>
-                      setDraftNames((prev) => ({ ...prev, [sensor.id]: e.target.value }))
-                    }
-                    className={`${isDark ? "bg-gray-900 border-gray-700 text-gray-100" : "bg-gray-50 border-gray-300 text-gray-900"} border rounded-md px-2 py-1 text-sm flex-1`}
-                  />
-                  <button
-                    onClick={() => handleSave(sensor.id)}
-                    className={`${isDark ? "bg-gray-700 hover:bg-gray-600 text-gray-100" : "bg-gray-900 hover:bg-gray-700 text-white"} text-xs px-2 py-1 rounded-md`}
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDraftNames((prev) => ({ ...prev, [sensor.id]: sensor.label }));
-                      setEditing((prev) => ({ ...prev, [sensor.id]: false }));
-                    }}
-                    className={`${isDark ? "bg-gray-800 hover:bg-gray-700 text-gray-200" : "bg-gray-200 hover:bg-gray-300 text-gray-800"} text-xs px-2 py-1 rounded-md`}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <h3 className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm font-medium uppercase tracking-wider`}>
-                    {sensor.label}
-                  </h3>
-                  <button
-                    onClick={() => setEditing((prev) => ({ ...prev, [sensor.id]: true }))}
-                    className={`${isDark ? "bg-gray-800 hover:bg-gray-700 text-gray-200" : "bg-gray-100 hover:bg-gray-200 text-gray-700"} text-xs px-2 py-1 rounded-md`}
-                  >
-                    Edit
-                  </button>
-                </>
-              )}
-            </div>
-            <div className="mb-2">
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  temp === null
-                    ? isDark
-                      ? "bg-gray-700 text-gray-300"
-                      : "bg-gray-100 text-gray-700"
-                    : temp <= 5
-                      ? "bg-emerald-900/50 text-emerald-400"
-                      : temp <= 8
-                        ? "bg-amber-900/50 text-amber-400"
-                        : "bg-red-900/50 text-red-400"
-                }`}
-              >
-                {getStatusLabel(temp)}
+          return (
+            <div
+              key={sensor.id}
+              className={`${glass} ${cardHover} ${getGlowClass(temp)} rounded-2xl p-8 animate-fade-in-up stagger-${idx + 1}`}
+            >
+              <div className="flex items-start justify-between mb-4 gap-3">
+                {editing[sensor.id] ? (
+                  <div className="flex-1 flex items-center gap-2 animate-fade-in">
+                    <input
+                      value={draftNames[sensor.id] || ""}
+                      onChange={(e) =>
+                        setDraftNames((prev) => ({ ...prev, [sensor.id]: e.target.value }))
+                      }
+                      className={`${isDark ? "bg-gray-900/80 border-gray-600 text-gray-100" : "bg-white border-gray-300 text-gray-900"} border rounded-lg px-3 py-1.5 text-sm flex-1 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50`}
+                      autoFocus
+                      onKeyDown={(e) => e.key === "Enter" && handleSave(sensor.id)}
+                    />
+                    <button
+                      onClick={() => handleSave(sensor.id)}
+                      className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDraftNames((prev) => ({ ...prev, [sensor.id]: sensor.label }));
+                        setEditing((prev) => ({ ...prev, [sensor.id]: false }));
+                      }}
+                      className={`${isDark ? "bg-gray-800/50 hover:bg-gray-700/50 text-gray-400" : "bg-gray-100 hover:bg-gray-200 text-gray-600"} text-xs px-3 py-1.5 rounded-lg transition-colors`}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className={`${isDark ? "text-gray-400" : "text-gray-600"} text-sm font-semibold uppercase tracking-wider`}>
+                      {sensor.label}
+                    </h3>
+                    <button
+                      onClick={() => setEditing((prev) => ({ ...prev, [sensor.id]: true }))}
+                      className={`${isDark ? "text-gray-500 hover:text-gray-300" : "text-gray-400 hover:text-gray-700"} text-xs px-2.5 py-1 rounded-lg transition-colors hover:bg-gray-500/10`}
+                    >
+                      Edit
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <span className={`${status.cls} text-xs font-semibold px-3 py-1 rounded-full inline-block mb-4`}>
+                {status.text}
               </span>
+
+              <div className={`text-6xl font-extrabold tabular-nums ${getTempGradient(temp)} animate-count-up`}>
+                {temp !== null ? `${temp.toFixed(1)}°` : "—"}
+              </div>
+
+              <div className={`${isDark ? "text-gray-500" : "text-gray-500"} text-sm mt-3`}>
+                {time
+                  ? `Updated ${new Date(time + "Z").toLocaleTimeString()}`
+                  : "Waiting for data..."}
+              </div>
             </div>
-            <div className={`text-6xl font-bold tabular-nums ${getTempColor(temp)}`}>
-              {temp !== null ? `${temp.toFixed(1)}°` : "—"}
-            </div>
-            <div className={`${isDark ? "text-gray-500" : "text-gray-600"} text-sm mt-2`}>
-              {time ? `Last updated: ${new Date(time + "Z").toLocaleTimeString()}` : "Waiting for data..."}
-            </div>
-          </div>
-        );
-      })}
+          );
+        })}
       </div>
     </div>
   );

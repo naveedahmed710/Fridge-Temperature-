@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import CurrentTemp from "./components/CurrentTemp";
 import TempChart from "./components/TempChart";
 import StatsCard from "./components/StatsCard";
-import AlertBanner from "./components/AlertBanner";
 import PowerMonitor from "./components/PowerMonitor";
 import {
   useLatest,
@@ -48,26 +47,32 @@ export default function App() {
     sensorNames.error ||
     powerLatest.error ||
     powerStats.error;
-  const pageClass = isDark
-    ? "min-h-screen bg-gray-950 text-gray-100"
-    : "min-h-screen bg-gray-100 text-gray-900";
-  const borderClass = isDark ? "border-gray-800" : "border-gray-200";
-  const mutedTextClass = isDark ? "text-gray-500" : "text-gray-600";
-  const subtleHeadingClass = isDark ? "text-gray-400" : "text-gray-600";
-  const refreshButtonClass = isDark
-    ? "bg-gray-800 hover:bg-gray-700 border-gray-700 text-gray-300"
-    : "bg-white hover:bg-gray-100 border-gray-300 text-gray-700";
+
+  const glass = isDark ? "glass-dark" : "glass-light";
+  const cardHover = `card-hover ${isDark ? "card-hover-dark" : "card-hover-light"}`;
+  const muted = isDark ? "text-gray-500" : "text-gray-500";
+  const heading = isDark ? "text-gray-300" : "text-gray-700";
 
   return (
-    <div className={pageClass}>
-      <header className={`border-b ${borderClass}`}>
-        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">
-              Sweet Home Automation
+    <div
+      className={`min-h-screen transition-colors duration-500 ${
+        isDark
+          ? "bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-gray-100"
+          : "bg-gradient-to-br from-slate-50 via-white to-slate-100 text-gray-900"
+      }`}
+    >
+      <header
+        className={`${glass} sticky top-0 z-50 animate-fade-in`}
+      >
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="animate-slide-in">
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              <span className="gradient-text-emerald">Sweet</span>{" "}
+              <span className={isDark ? "text-white" : "text-gray-900"}>Home</span>{" "}
+              <span className="gradient-text-blue">Automation</span>
             </h1>
-            <p className={`${mutedTextClass} text-sm mt-0.5`}>
-              Temperature device: {tempDeviceId} | Power device: {powerDeviceId}
+            <p className={`${muted} text-xs mt-1 tracking-wide`}>
+              Real-time monitoring dashboard
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -80,39 +85,36 @@ export default function App() {
                 powerLatest.refetch();
                 powerStats.refetch();
               }}
-              className={`${refreshButtonClass} border text-sm px-4 py-2 rounded-lg transition-colors cursor-pointer`}
+              className={`${glass} ${cardHover} text-sm px-4 py-2 rounded-xl cursor-pointer ${isDark ? "text-gray-300" : "text-gray-700"}`}
             >
               Refresh
             </button>
             <button
               onClick={() => setIsDark((prev) => !prev)}
-              className={`${refreshButtonClass} border text-sm px-4 py-2 rounded-lg transition-colors cursor-pointer`}
+              className={`${glass} ${cardHover} text-sm px-4 py-2 rounded-xl cursor-pointer ${isDark ? "text-gray-300" : "text-gray-700"}`}
             >
-              {isDark ? "Light mode" : "Dark mode"}
+              {isDark ? "Light" : "Dark"}
             </button>
-            <div className={`flex items-center gap-2 text-sm ${mutedTextClass}`}>
+            <div className={`flex items-center gap-2 text-xs ${muted}`}>
               <span
-                className={`w-2 h-2 rounded-full ${anyError ? "bg-red-500" : "bg-emerald-500"}`}
+                className={`w-2 h-2 rounded-full ${anyError ? "bg-red-500" : "bg-emerald-500 animate-pulse-dot"}`}
               />
-              {anyError ? "Connection error" : "Live"}
+              {anyError ? "Offline" : "Live"}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+      <main className="max-w-7xl mx-auto px-6 py-10 space-y-10">
         {anyError && (
-          <div className="bg-red-950/30 border border-red-800/50 rounded-xl px-5 py-4 text-red-300 text-sm">
-            Could not reach the server: {anyError}. Make sure the backend is
-            running on port 4004.
+          <div className={`${glass} rounded-2xl px-6 py-4 text-red-400 text-sm animate-fade-in-up border border-red-500/20`}>
+            Could not reach the server. Make sure the backend is running on port 4004.
           </div>
         )}
 
-        <AlertBanner readings={latest.data} sensorNames={sensorNames.data} isDark={isDark} />
-
-        <section>
-          <h2 className={`${subtleHeadingClass} text-xs font-semibold uppercase tracking-widest mb-4`}>
-            Current Temperature
+        <section className="animate-fade-in-up stagger-1">
+          <h2 className={`${heading} text-xs font-semibold uppercase tracking-widest mb-5`}>
+            Temperature Sensors
           </h2>
           <CurrentTemp
             readings={latest.data}
@@ -123,7 +125,7 @@ export default function App() {
           />
         </section>
 
-        <section>
+        <section className="animate-fade-in-up stagger-2">
           <TempChart
             readings={readings.data}
             loading={readings.loading}
@@ -132,22 +134,30 @@ export default function App() {
           />
         </section>
 
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className={`${subtleHeadingClass} text-xs font-semibold uppercase tracking-widest`}>
-              Statistics
+        <section className="animate-fade-in-up stagger-3">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className={`${heading} text-xs font-semibold uppercase tracking-widest`}>
+              Temperature Statistics
             </h2>
-            <select
-              value={statsHours}
-              onChange={(e) => setStatsHours(Number(e.target.value))}
-              className={`${isDark ? "bg-gray-800 border-gray-700 text-gray-200" : "bg-white border-gray-300 text-gray-700"} border rounded-lg px-3 py-1.5 text-sm`}
-            >
+            <div className="flex gap-1.5">
               {STATS_FILTERS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  Last {item.label}
-                </option>
+                <button
+                  key={item.value}
+                  onClick={() => setStatsHours(item.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${
+                    statsHours === item.value
+                      ? isDark
+                        ? "bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30"
+                        : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300"
+                      : isDark
+                        ? "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {item.label}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
           <StatsCard
             stats={stats.data}
@@ -158,19 +168,21 @@ export default function App() {
           />
         </section>
 
-        <PowerMonitor
-          latest={powerLatest.data}
-          stats={powerStats.data}
-          latestLoading={powerLatest.loading}
-          statsLoading={powerStats.loading}
-          hours={statsHours}
-          isDark={isDark}
-        />
+        <section className="animate-fade-in-up stagger-4">
+          <PowerMonitor
+            latest={powerLatest.data}
+            stats={powerStats.data}
+            latestLoading={powerLatest.loading}
+            statsLoading={powerStats.loading}
+            hours={statsHours}
+            isDark={isDark}
+          />
+        </section>
       </main>
 
-      <footer className={`border-t ${borderClass} mt-12`}>
-        <div className={`max-w-6xl mx-auto px-6 py-4 text-center ${mutedTextClass} text-xs`}>
-          Sweet Home Automation - Dual ESP32-S3 Temperature + 3-Phase Electrical Monitoring
+      <footer className={`${glass} mt-16`}>
+        <div className={`max-w-7xl mx-auto px-6 py-5 text-center ${muted} text-xs`}>
+          Sweet Home Automation — Dual ESP32-S3 Temperature + 3-Phase Electrical Monitoring
         </div>
       </footer>
     </div>
